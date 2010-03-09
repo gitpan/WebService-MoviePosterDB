@@ -1,4 +1,4 @@
-# $Id: Poster.pm 3771 2010-01-20 11:11:24Z chris $
+# $Id: Poster.pm 4601 2010-03-09 13:15:53Z chris $
 
 =head1 NAME
 
@@ -15,7 +15,7 @@ package WebService::MoviePosterDB::Poster;
 use strict;
 use warnings;
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 use base qw(Class::Accessor);
 

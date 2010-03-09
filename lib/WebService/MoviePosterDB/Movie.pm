@@ -1,4 +1,4 @@
-# $Id: Movie.pm 3771 2010-01-20 11:11:24Z chris $
+# $Id: Movie.pm 4601 2010-03-09 13:15:53Z chris $
 
 =head1 NAME
 
@@ -15,7 +15,7 @@ package WebService::MoviePosterDB::Movie;
 use strict;
 use warnings;
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 use Carp;
 our @CARP_NOT = qw(WebService::MoviePosterDB);
