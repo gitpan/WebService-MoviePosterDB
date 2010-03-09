@@ -1,8 +1,9 @@
-# $Id: MoviePosterDB.pm 4602 2010-03-09 13:26:39Z chris $
+# $Id: MoviePosterDB.pm 4622 2010-03-09 14:05:12Z chris $
 
 =head1 NAME
 
 WebService::MoviePosterDB - OO Perl interface to the movie poster database MoviePosterDB.
+
 
 =head1 SYNOPSIS
 
@@ -19,29 +20,21 @@ WebService::MoviePosterDB - OO Perl interface to the movie poster database Movie
         print $_->image_location(), "\n";
     }
 
+
 =head1 DESCRIPTION
 
 WebService::MusicBrainz is an object-oriented interface to MoviePosterDB.  It can 
 be used to retrieve artwork for IMDB titles.
 
-=head1 AUTHOR
-
-Christopher Key (cjk32@cam.ac.uk)
-
-=head1 COPYRIGHT
-
-Copyright 2010, Christopher Key.
-This module is free software. It may be used, redistributed and/or 
-modified under the same terms as Perl itself.
-
 =cut
+
 
 package WebService::MoviePosterDB;
 
 use strict;
 use warnings;
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 use Cache::FileCache;
 
@@ -250,3 +243,18 @@ sub _get_page {
 }
 
 1;
+
+
+=head1 AUTHOR
+
+Christopher Key <cjk32@cam.ac.uk>
+
+=head1 COPYRIGHT AND LICENCE
+
+Copyright (C) 2010 Christopher Key <cjk32@cam.ac.uk>
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.8.4 or,
+at your option, any later version of Perl 5 you may have available.
+
+=cut
