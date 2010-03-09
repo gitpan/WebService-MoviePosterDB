@@ -1,4 +1,4 @@
-# $Id: MoviePosterDB.pm 4622 2010-03-09 14:05:12Z chris $
+# $Id: MoviePosterDB.pm 4631 2010-03-09 14:23:27Z chris $
 
 =head1 NAME
 
@@ -34,7 +34,7 @@ package WebService::MoviePosterDB;
 use strict;
 use warnings;
 
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 
 use Cache::FileCache;
 
@@ -248,6 +248,7 @@ sub _get_page {
 =head1 AUTHOR
 
 Christopher Key <cjk32@cam.ac.uk>
+
 
 =head1 COPYRIGHT AND LICENCE
 

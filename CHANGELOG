@@ -1,2 +1,5 @@
+0.15 2009-03-09
+	- Add PREREQ, LICENSE, AUTHOR and ABSTRACT to META.yml.
+
 0.14 2010-03-09
 	- First public release.
