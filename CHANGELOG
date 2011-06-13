@@ -1,4 +1,4 @@
-0.16 2xxx-xx-xx
+0.17 2011-06-13
 	- Removed code relating to the deprecated version 1 API.
 	- Added support for demo credentials.
 

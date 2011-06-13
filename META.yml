@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               WebService-MoviePosterDB
-version:            0.16
+version:            0.17
 abstract:           OO Perl interface to the movie poster database MoviePosterDB.
 author:
     - Christopher Key <cjk32@cam.ac.uk>
