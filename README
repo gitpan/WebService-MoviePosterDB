@@ -1,4 +1,4 @@
-$Id: README 4623 2010-03-09 14:05:33Z chris $
+$Id: README 6483 2011-06-13 13:32:45Z chris $
 
 INTRODUCTION
 ============
@@ -30,7 +30,7 @@ URI
 COPYRIGHT AND LICENCE
 =====================
 
-Copyright (C) 2010 Christopher Key <cjk32@cam.ac.uk>
+Copyright (C) 2010-2011 Christopher Key <cjk32@cam.ac.uk>
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.4 or,

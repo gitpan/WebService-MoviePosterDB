@@ -1,4 +1,4 @@
-# $Id: MoviePosterDB.pm 4631 2010-03-09 14:23:27Z chris $
+# $Id: MoviePosterDB.pm 6483 2011-06-13 13:32:45Z chris $
 
 =head1 NAME
 
@@ -9,7 +9,7 @@ WebService::MoviePosterDB - OO Perl interface to the movie poster database Movie
 
     use WebService::MoviePosterDB;
 
-    my $ws = WebService::MoviePosterDB->new(cache => 1, cache_exp => "12h");
+    my $ws = WebService::MoviePosterDB->new(api_key => "key", api_secret => "secret", cache => 1, cache_exp => "12h");
 
     my $movie = $ws->search(type => "Movie", imdbid => "tt0114814", width => 300);
 
@@ -23,7 +23,7 @@ WebService::MoviePosterDB - OO Perl interface to the movie poster database Movie
 
 =head1 DESCRIPTION
 
-WebService::MusicBrainz is an object-oriented interface to MoviePosterDB.  It can 
+WebService::MusicBrainz is an object-oriented interface to MoviePosterDB.  It can
 be used to retrieve artwork for IMDB titles.
 
 =cut
@@ -34,7 +34,7 @@ package WebService::MoviePosterDB;
 use strict;
 use warnings;
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 use Cache::FileCache;
 
@@ -60,31 +60,19 @@ Constructor.
 
 =over 4
 
-=item api_version - Which API to use.
-
-=over 4
-
-1 - http://api.movieposterdb.com/json.inc.php
-
-2 - http://api.movieposterdb.com/json
-
-=back
-
-Defaults to 1, unless an api_key is supplied in which case, defaults to 2
-
 =item api_key, api_secret
 
-A key and secret are required if using the version 2 API.  Contact movieposterdb.com for details.
+A key and secret are required to use the API.  Contact movieposterdb.com for details.
 
 =item cache
 
 Whether to cache responses.  Defaults to true
 
-=item cache_root 
+=item cache_root
 
 The root dir for the cache.  Defaults to tmpdir();
 
-=item cache_exp 
+=item cache_exp
 
 How long to cache responses for.  Defaults to "1h"
 
@@ -96,12 +84,21 @@ sub new {
     my $class = shift;
     my %args = @_;
     my $self = {};
-    
+
     bless $self, $class;
-    
-    $self->{'api_key'} = $args{'api_key'} || "demo";
-    $self->{'api_secret'} = $args{'api_secret'} || "demo";
-    $self->{'api_version'} = $args{'api_version'} || (defined $args{'api_key'} ? 2 : 1);
+
+    if ((!exists $args{'api_version'} || !defined $args{'api_version'} || $args{'api_version'} == 1) && !exists $args{'api_key'}) {
+	carp "version 1 API is no longer available, using demo credentials";
+	$self->{'api_key'} = "demo";
+	$self->{'api_secret'} = "demo";
+    } else {
+	$self->{'api_key'} = $args{'api_key'};
+	$self->{'api_secret'} = $args{'api_secret'};
+    }
+
+    if (!defined $self->{'api_key'} || !defined $self->{'api_secret'}) {
+	croak "api_key and/or api_secret missing";
+    }
 
     $self->{'_cache_root'} = $args{'cache_root'} || tmpdir();
     $self->{'_cache_exp'} = $args{'cache_exp'} || "1h";
@@ -131,9 +128,13 @@ Accesses MoviePosterDB and returns a WebService::MoviePosterDB::Movie object.
 
 Controls the type of resource being requested.  Currently only supports "Movie".
 
-=item imdbid
+=item tconst
 
 IMDB id for the title, e.g. tt0114814
+
+=item imdbid
+
+Alias for tconst
 
 =item title
 
@@ -152,47 +153,30 @@ sub search {
     my %args = @_;
 
     croak "Unknown type" unless ($args{'type'} eq "Movie");
-    if (defined $args{'imdbid'}) {
-	($args{'imdb_code'}) = $args{'imdbid'} =~ m/^tt(\d{6,7})$/ or croak "Unable to parse imdbid '$args{'imdbid'}'";
-	$args{'imdb_code'} += 0;
-	delete $args{'imdbid'};
-    }
-
-    my $legacy = $self->{'api_version'} == 1;
 
     my %_args;
 
-    if (!$legacy) {
-	$_args{'api_key'} = $self->{'api_key'};
-	$_args{'secret'} = $self->_get_secret($args{'imdb_code'}, $args{'title'});
+    if (exists $args{'imdb_code'}) {
+	$_args{'imdb_code'} = sprintf("%d", $args{'imdb_code'}); # Trim leading zeroes
+    } elsif (exists $args{'tconst'} || exists $args{'imdbid'}) {
+	my $tconst = exists $args{'tconst'} ?  $args{'tconst'} : $args{'imdbid'};
+	my ($id) = $tconst =~ m/^tt(\d{6,7})$/ or croak "Unable to parse tconst '$tconst'";
+	$_args{'imdb_code'} = sprintf("%d", $id); # Trim leading zeroes
     }
-    
-    foreach (keys %args) {
-	my ($k, $v) = ($_, $args{$_});
-	    
-	# Fixup to make json.inc.php look like json
-	if ($k eq "imdb_code") {
-	    if ($legacy) { $k = "imdb"; }
-	    $v = sprintf("%d", $v); # Remove any leading zeroes
-	} elsif ($k eq "title") {
-	    # Nothing
-	} elsif ($k eq "width") {
-	    # Nothing
-	} else {
-	    next;
-	}
+    if (exists $args{'title'}) { $_args{'title'} = $args{'title'}; }
+    if (exists $args{'width'}) { $_args{'width'} = $args{'width'}; }
 
-	$_args{$k} = $v;
+    # Ugly hack.  The demi api service appears to normalise the title key to lower case before returning the secret hash.
+    if (exists $_args{'title'} && $self->{'api_key'} eq "demo" && $self->{'api_secret'} eq "demo") { $_args{'title'} = lc $_args{'title'}; }
 
-    }
+    $_args{'api_key'} = $self->{'api_key'};
+    $_args{'secret'} = $self->_get_secret(%_args);
 
     my $uri = URI->new();
     $uri->scheme("http");
     $uri->host("api.movieposterdb.com");
-    $uri->path($legacy ? "json.inc.php": "json");
-    my @_args = map {$_, $_args{$_}} sort keys %_args;
-    foreach (@_args) { utf8::encode($_); }
-    $uri->query_form(@_args);
+    $uri->path("json");
+    $uri->query_form( map { my ($n, $v) = ($_, $_args{$_}); utf8::encode($n); utf8::encode($v); ($n => $v); } sort keys %_args );
 
     my $json = JSON->new()->decode($self->_get_page($uri->as_string()));
 
@@ -202,16 +186,39 @@ sub search {
 
 sub _get_secret {
     my $self = shift;
-    my $imdb_code = shift;
-    my $title = shift;
+    my %args = @_;
 
-    my $v = $self->{'api_secret'};
-    if (defined($imdb_code)) { $v .= sprintf("%d", $imdb_code); }
-    if (defined($title)) { $v .= $title; }
+    if ($self->{'api_key'} eq "demo" && $self->{'api_secret'} eq "demo") {
 
-    utf8::encode($v);
+	my %_args;
 
-    return substr(md5_hex($v), 10, 12);
+	if (exists $args{'title'}) {$_args{'title'} = $args{'title'}; }
+	if (exists $args{'imdb_code'}) {$_args{'imdb_code'} = $args{'imdb_code'}; }
+
+	$_args{'type'} = "JSON";
+	$_args{'api_key'} = $self->{'api_key'};
+	$_args{'api_secret'} = $self->{'api_secret'};
+
+	my $uri = URI->new();
+	$uri->scheme("http");
+	$uri->host("api.movieposterdb.com");
+	$uri->path("console");
+	$uri->query_form( map { my ($n, $v) = ($_, $_args{$_}); utf8::encode($n); utf8::encode($v); ($n => $v); } sort keys %_args );
+
+	my $page = $self->_get_page($uri->as_string());
+	my ($s) = $page =~ m/secret=([a-f0-9]{12})/ or die "Failed to extract secret";
+
+	return $s;
+
+    } else {
+	my $v = $self->{'api_secret'};
+	if (exists $args{'imdb_code'}) { $v .= sprintf("%d", $args{'imdb_code'}); }
+	if (exists $args{'title'}) { $v .= $args{'title'}; }
+
+	utf8::encode($v);
+
+	return substr(md5_hex($v), 10, 12);
+    }
 
 }
 
@@ -227,7 +234,7 @@ sub _get_page {
 
     if (! defined $content) {
 	my $response = $self->{'_useragent'}->get($url);
-    
+
 	if($response->code() ne "200") {
 	    croak "URL (", $url, ") Request Failed - Code: ", $response->code(), " Error: ", $response->message(), "\n";
 	}
@@ -245,6 +252,16 @@ sub _get_page {
 1;
 
 
+=head1 NOTES
+
+The version 1 API, previously used by default, stopped as of 2011-09-27, and credentials
+are required to access the version 2 API.  It is possible to access the
+version 2 API using test credentials (key, secret = "demo"), and this will be
+done for legacy applications that try to use the version 1 API.  However, this
+feature is only intended for test purposes: legacy applications should be adapted,
+and new applications should not use it.
+
+
 =head1 AUTHOR
 
 Christopher Key <cjk32@cam.ac.uk>
@@ -252,7 +269,7 @@ Christopher Key <cjk32@cam.ac.uk>
 
 =head1 COPYRIGHT AND LICENCE
 
-Copyright (C) 2010 Christopher Key <cjk32@cam.ac.uk>
+Copyright (C) 2010-2011 Christopher Key <cjk32@cam.ac.uk>
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.4 or,

@@ -1,4 +1,4 @@
-# $Id: Movie.pm 4624 2010-03-09 14:06:32Z chris $
+# $Id: Movie.pm 6468 2011-06-12 23:11:23Z chris $
 
 =head1 NAME
 
@@ -15,7 +15,7 @@ package WebService::MoviePosterDB::Movie;
 use strict;
 use warnings;
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 use Carp;
 our @CARP_NOT = qw(WebService::MoviePosterDB);
@@ -45,21 +45,21 @@ sub _new {
     $self->title($json->{'title'});
     $self->year($json->{'year'});
     $self->page($json->{'page'});
-    if (defined $json->{'imageurl'}) {
-	# Fudged for the response from legacy API
-	$self->posters([WebService::MoviePosterDB::Poster->_new( {'image_location' => $json->{'imageurl'}} )]);
-    } else {
-	my @posters;
-	foreach ( @{$json->{'posters'}} ) {
-	    push @posters, WebService::MoviePosterDB::Poster->_new($_);
-	}
-	$self->posters(\@posters);
-    }
+    $self->posters( [ map { WebService::MoviePosterDB::Poster->_new($_) } @{$json->{'posters'}} ] );
 
     return $self;
 }
 
 =head1 METHODS
+
+=head2 tconst()
+
+=cut
+
+sub tconst {
+    my $self = shift;
+    return sprintf("tt%07d", $self->imdb());
+}
 
 =head2 imdbid()
 
@@ -67,7 +67,7 @@ sub _new {
 
 sub imdbid {
     my $self = shift;
-    return sprintf("tt%07d", $self->imdb());
+    return $self->tconst();
 }
 
 =head2 imdb()
