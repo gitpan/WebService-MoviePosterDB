@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id: movieposterdb.t 6476 2011-06-13 01:15:32Z chris $
+# $Id: movieposterdb.t 6490 2011-06-21 10:55:09Z chris $
 
 use strict;
 use warnings;
@@ -9,32 +9,25 @@ use Test::More;
 BEGIN { use_ok('WebService::MoviePosterDB'); }
 
 {
-    my ($W, $D);
+    my $W;
 
     local $SIG{__WARN__} = sub { $W = shift; };
-    local $SIG{__DIE__}  = sub { $D = shift; };
 
-    $W = ""; $D = "";
+    $W = "";
     WebService::MoviePosterDB->new();
-    like($W, qr/^version 1 API is no longer available, using demo credentials/);
-    is($D, "");
+    like($W, qr/^version 1 API is no longer available, using demo credentials/, "implicit v1 API deprecation warning");
 
-    $W = ""; $D = "";
+    $W = "";
     WebService::MoviePosterDB->new('api_version' => 1);
-    like($W, qr/^version 1 API is no longer available, using demo credentials/);
-    is($D, "");
-
-    $W = ""; $D = "";
-    eval { WebService::MoviePosterDB->new('api_version' => 2); };
-    is($W, "");
-    like($D, qr/^api_key and\/or api_secret missing/);
-
-    $W = ""; $D = "";
-    eval { WebService::MoviePosterDB->new('api_key' => "key"); };
-    is($W, "");
-    like($D, qr/^api_key and\/or api_secret missing/);
-
+    like($W, qr/^version 1 API is no longer available, using demo credentials/, "explicit v1 API deprecation warning");
 }
+
+eval { WebService::MoviePosterDB->new('api_version' => 2); };
+like($@, qr/^api_key and\/or api_secret missing/, "api_key missing");
+
+eval { WebService::MoviePosterDB->new('api_key' => "key"); };
+like($@, qr/^api_key and\/or api_secret missing/, "api_secret missing");
+
 
 my @ws;
 
